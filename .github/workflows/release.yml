@@ -92,8 +92,9 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: ${{ github.ref_name }}
-          draft: true
+          # 直接发布为正式 Release（原先为 draft，需要手动点一次 Publish 才公开）
+          name: ZzzAutoSign v${{ steps.version.outputs.value }}
+          draft: false
           generate_release_notes: true
           files: |
             dist/*.zip
