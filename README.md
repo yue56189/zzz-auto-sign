@@ -182,7 +182,9 @@ dotnet publish src/CredentialGrabber/CredentialGrabber.csproj -c Release -r win-
 dotnet test tests/ZzzAutoSign.Tests/ZzzAutoSign.Tests.csproj
 ```
 
-推送到 GitHub 后，Actions 会自动编译并上传产物（见 `.github/workflows/build.yml`）；打 `v1.0.0` 形式的 tag 会创建 Release（`release.yml`）。
+推送到 GitHub 后，Actions 会自动编译并上传产物（见 `.github/workflows/build.yml`）；打 `v1.0.0` 形式的 tag 会由 `release.yml` 构建并**直接发布**正式的 GitHub Release，附件为两个 zip + `SHA256SUMS.txt`。
+
+Release 的正文取自 `docs/release-notes/v<版本>.md`（例如 `docs/release-notes/v1.0.0.md`）；该文件不存在时回退到 `docs/release-notes/_fallback.md`，其中的 `{{TAG}}` 会被替换成实际 tag。
 
 ---
 

@@ -89,12 +89,34 @@ jobs:
           $lines | Set-Content -Path dist/SHA256SUMS.txt -Encoding utf8
           Get-Content dist/SHA256SUMS.txt
 
+      - name: Prepare release notes
+        id: notes
+        shell: pwsh
+        run: |
+          # 说明文案放在 docs/release-notes/ 下的 md 里，工作流只做替换与复制，
+          # 避免中文经由 YAML -> PowerShell 的编码往返出问题。
+          $tag = "v${{ steps.version.outputs.value }}"
+          $custom = "docs/release-notes/$tag.md"
+          if (-not (Test-Path $custom)) {
+            Write-Host "no docs/release-notes/$tag.md, falling back to _fallback.md"
+            $custom = "docs/release-notes/_fallback.md"
+          }
+          $out = "dist/RELEASE_BODY.md"
+          $text = (Get-Content $custom -Raw -Encoding UTF8).Replace("{{TAG}}", $tag)
+          [System.IO.File]::WriteAllText($out, $text, [System.Text.UTF8Encoding]::new($false))
+          Write-Host "release body <- $custom ($($text.Length) chars)"
+          "path=$out" >> $env:GITHUB_OUTPUT
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           # 直接发布为正式 Release（原先为 draft，需要手动点一次 Publish 才公开）
           name: ZzzAutoSign v${{ steps.version.outputs.value }}
           draft: false
+          # 正文取自 docs/release-notes/v<版本>.md。
+          # 不能只靠 generate_release_notes：它只根据「已合并的 PR」生成 What's Changed，
+          # 而本仓库都是直推 main、没有 PR，结果正文会是空的。
+          body_path: ${{ steps.notes.outputs.path }}
           generate_release_notes: true
           files: |
             dist/*.zip
