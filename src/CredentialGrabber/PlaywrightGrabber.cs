@@ -135,8 +135,12 @@ public sealed class PlaywrightGrabber : IAsyncDisposable
         catch (PlaywrightException ex)
         {
             throw new InvalidOperationException(
-                "无法启动浏览器。请先安装 Chrome 或 Edge；若使用内置 Chromium，" +
-                "请在工具目录执行 .\\playwright.ps1 install chromium 安装浏览器内核。\n" +
+                "无法启动浏览器：本机既没找到 Google Chrome，也没找到 Microsoft Edge。\n" +
+                "解决办法任选其一：\n" +
+                "  1) 安装 Chrome 或 Edge（Edge 是 Windows 自带的，通常装回来即可）；\n" +
+                "  2) 双击工具目录下的 install-browser.cmd，下载内置 Chromium 内核" +
+                "（约 170 MB，需要联网）。\n" +
+                "也可以改用「复制控制台脚本」的方式手工获取凭证。\n" +
                 $"原始错误：{ex.Message}", ex);
         }
     }

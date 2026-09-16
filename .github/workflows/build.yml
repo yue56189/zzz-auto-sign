@@ -79,6 +79,26 @@ jobs:
             throw "Playwright driver looks truncated: $size bytes"
           }
 
+      - name: Verify packaged files are the usable ones
+        shell: pwsh
+        run: |
+          # playwright.ps1 comes from the Playwright NuGet package and loads
+          # Microsoft.Playwright.dll from disk. Single-file publish bundles that dll
+          # into the exe, so the script can never succeed here - it only throws
+          # FileNotFoundException + TypeNotFound and sends users chasing a dead end.
+          # It is dropped by DropBrokenPlaywrightScript in CredentialGrabber.csproj,
+          # and install-browser.cmd (which drives the bundled node directly) takes
+          # its place.
+          $broken = "publish/CredentialGrabber/playwright.ps1"
+          if (Test-Path $broken) {
+            throw "playwright.ps1 must not be shipped, it cannot work under single-file publish: $broken"
+          }
+          $helper = "publish/CredentialGrabber/install-browser.cmd"
+          if (-not (Test-Path $helper)) {
+            throw "install-browser.cmd missing: $helper"
+          }
+          Write-Host "Packaged files OK: install-browser.cmd present, playwright.ps1 absent"
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:

@@ -211,10 +211,10 @@ public sealed class MainForm : Form
         {
             AppendLog($"[错误] {ex.Message}");
 
-            if (ex.Message.Contains("浏览器内核") || ex.Message.Contains("无法启动浏览器"))
+            if (ex.Message.Contains("无法启动浏览器"))
             {
-                AppendLog("提示：可在本工具目录执行以下命令安装浏览器内核：");
-                AppendLog("  .\\playwright.ps1 install chromium");
+                AppendLog("提示：本工具优先使用系统已安装的 Chrome / Edge。");
+                AppendLog("两者都没有时，可双击工具目录下的 install-browser.cmd 下载内置 Chromium 内核。");
                 AppendLog("或直接改用方式 B（F12 控制台脚本）。");
             }
 

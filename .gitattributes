@@ -1,0 +1,10 @@
+# Windows 批处理必须用 CRLF：LF-only 的 .cmd 在 cmd.exe 里遇到 goto/label 会出错。
+# 显式声明，避免依赖检出端的 core.autocrlf 设置。
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+# shell 脚本反过来，必须是 LF，否则在 Linux 上跑不起来。
+*.sh text eol=lf
+
+# 其余按 Git 的常规文本处理
+* text=auto

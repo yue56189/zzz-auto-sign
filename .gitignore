@@ -34,6 +34,10 @@ playwright/.auth/
 logs/
 *.log
 
+## 临时探查脚手架（构建/发布验证时的中间产物，不要提交）
+.tmp-*/
+.tmp-*
+
 ## 系统
 Thumbs.db
 desktop.ini
