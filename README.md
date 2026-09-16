@@ -218,6 +218,18 @@ Release 的正文取自 `docs/release-notes/v<版本>.md`（例如 `docs/release
 
 ---
 
+## 许可证
+
+本项目采用 [MIT 许可证](LICENSE)，版权归 yue56189 所有——可自由使用、修改、分发，只需保留版权声明。
+
+发布的压缩包里还包含第三方组件，其许可证文件随包分发，**不要删除**：
+
+| 组件 | 许可证 | 包内位置 |
+|---|---|---|
+| [Playwright](https://github.com/microsoft/playwright) 的 node 驱动 | Apache-2.0 | `CredentialGrabber\.playwright\node\LICENSE`、`.playwright\package\LICENSE` |
+
+---
+
 ## 免责声明
 
 本工具仅用于个人账号的自动化签到，未使用任何破解或绕过安全机制的手段。使用第三方工具操作米游社账号**存在被风控的固有风险**，请自行评估。请勿用于批量账号或其他违反《米游社用户协议》的场景。
