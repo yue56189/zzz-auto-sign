@@ -78,6 +78,16 @@ jobs:
           if ($size -lt 10MB) {
             throw "Playwright driver looks truncated: $size bytes"
           }
+          # Playwright's targets fall back to copying *every* platform's node binary
+          # when it cannot infer the platform, silently adding ~388 MB of darwin/linux
+          # runtimes. Only win32_x64 may exist here.
+          # See the PlaywrightPlatform property in src/CredentialGrabber/CredentialGrabber.csproj.
+          $others = Get-ChildItem "publish/CredentialGrabber/.playwright/node" -Directory |
+                    Where-Object { $_.Name -ne "win32_x64" }
+          if ($others) {
+            throw "unexpected non-Windows Playwright node runtimes: $($others.Name -join ', ')"
+          }
+          Write-Host "Playwright node runtimes OK: only win32_x64 present"
 
       - name: Verify packaged files are the usable ones
         shell: pwsh
