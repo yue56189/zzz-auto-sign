@@ -1,0 +1,68 @@
+name: build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore ZzzAutoSign.sln
+
+      - name: Build
+        run: dotnet build ZzzAutoSign.sln -c Release --no-restore
+
+      - name: Test
+        run: dotnet test tests/ZzzAutoSign.Tests/ZzzAutoSign.Tests.csproj -c Release --no-build --verbosity normal
+
+      - name: Publish main app (single file)
+        run: >
+          dotnet publish src/ZzzAutoSign/ZzzAutoSign.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o publish/ZzzAutoSign
+
+      - name: Publish credential grabber (single file)
+        run: >
+          dotnet publish src/CredentialGrabber/CredentialGrabber.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -o publish/CredentialGrabber
+
+      - name: Show publish output
+        shell: pwsh
+        run: |
+          Write-Host "=== ZzzAutoSign ==="
+          Get-ChildItem publish/ZzzAutoSign | Select-Object Name, Length
+          Write-Host "=== CredentialGrabber ==="
+          Get-ChildItem publish/CredentialGrabber | Select-Object Name, Length
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: zzz-auto-sign-${{ github.sha }}
+          path: publish/
+          retention-days: 14

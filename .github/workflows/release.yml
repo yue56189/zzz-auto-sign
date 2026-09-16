@@ -1,0 +1,102 @@
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+env:
+  DOTNET_VERSION: '8.0.x'
+  DOTNET_NOLOGO: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: true
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Determine version
+        id: version
+        shell: pwsh
+        run: |
+          if ('${{ github.event_name }}' -eq 'workflow_dispatch') {
+            $v = '${{ github.event.inputs.tag }}'
+          } else {
+            $v = '${{ github.ref_name }}'
+          }
+          $v = $v.TrimStart('v')
+          Write-Host "Version = $v"
+          "value=$v" >> $env:GITHUB_OUTPUT
+
+      - name: Restore
+        run: dotnet restore ZzzAutoSign.sln
+
+      - name: Test
+        run: dotnet test tests/ZzzAutoSign.Tests/ZzzAutoSign.Tests.csproj -c Release
+
+      - name: Publish main app
+        run: >
+          dotnet publish src/ZzzAutoSign/ZzzAutoSign.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:Version=${{ steps.version.outputs.value }}
+          -o publish/ZzzAutoSign
+
+      - name: Publish credential grabber
+        run: >
+          dotnet publish src/CredentialGrabber/CredentialGrabber.csproj
+          -c Release -r win-x64 --self-contained true
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -p:EnableCompressionInSingleFile=true
+          -p:Version=${{ steps.version.outputs.value }}
+          -o publish/CredentialGrabber
+
+      - name: Package release archives
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path dist | Out-Null
+
+          # 主程序包
+          Compress-Archive -Path publish/ZzzAutoSign/* -DestinationPath dist/ZzzAutoSign-win-x64.zip -Force
+
+          # 凭证提取工具包
+          Compress-Archive -Path publish/CredentialGrabber/* -DestinationPath dist/CredentialGrabber-win-x64.zip -Force
+
+          # 校验和
+          $lines = Get-ChildItem dist/*.zip | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          }
+          $lines | Set-Content -Path dist/SHA256SUMS.txt -Encoding utf8
+          Get-Content dist/SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          draft: true
+          generate_release_notes: true
+          files: |
+            dist/*.zip
+            dist/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
