@@ -70,6 +70,25 @@ jobs:
           -p:Version=${{ steps.version.outputs.value }}
           -o publish/CredentialGrabber
 
+      - name: Verify Playwright driver is present
+        shell: pwsh
+        run: |
+          # Publishing as a single file silently drops .playwright\node\win32_x64\node.exe:
+          # it gets classified as a "native library" and removed from the publish list,
+          # yet it is never actually bundled into the exe. package\ and LICENSE survive,
+          # so the output directory looks fine and the app only fails at runtime with
+          # "Driver not found". Never build a release without this file.
+          # See EnsurePlaywrightDriverIsPublished in src/CredentialGrabber/CredentialGrabber.csproj.
+          $driver = "publish/CredentialGrabber/.playwright/node/win32_x64/node.exe"
+          if (-not (Test-Path $driver)) {
+            throw "Playwright driver missing: $driver"
+          }
+          $size = (Get-Item $driver).Length
+          Write-Host "Playwright driver OK: $driver ($size bytes)"
+          if ($size -lt 10MB) {
+            throw "Playwright driver looks truncated: $size bytes"
+          }
+
       - name: Package release archives
         shell: pwsh
         run: |

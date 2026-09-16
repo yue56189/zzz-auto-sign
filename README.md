@@ -43,6 +43,10 @@
 
 解压到任意目录（例如 `D:\Tools\ZzzAutoSign`），**无需安装 .NET 运行时**。
 
+> **解压整个压缩包，不要只把 exe 拿出来。**
+> `CredentialGrabber.exe` 依赖同目录下的 `.playwright\` 文件夹（Playwright 的 node 驱动），
+> 少了它启动就会报 `Driver not found`。详见 [排障手册](docs/排障手册.md)。
+
 > **需要管理员权限。** 主程序通过 WMI 监听进程启动事件，这需要提权。首次运行会弹 UAC，点「是」即可。
 
 ---
