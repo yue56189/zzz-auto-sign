@@ -126,12 +126,32 @@ jobs:
           Compress-Archive -Path publish/CredentialGrabber/* -DestinationPath dist/CredentialGrabber-win-x64.zip -Force
 
           # 校验和
+          #
+          # 必须写 LF 且不带 BOM。原先用 Set-Content -Encoding utf8，在 Windows 上
+          # 会写成 CRLF：文件名后面被挂上一个 \r，用户拿
+          # `sha256sum -c SHA256SUMS.txt`（Git Bash / WSL，很常见的做法）会得到
+          # "FAILED open or read" —— 摘要其实全对，是行尾让标准工具读不出来，
+          # 看起来却像附件损坏。v1.0.2 就发过一份这样的，见 docs/排障手册.md。
           $lines = Get-ChildItem dist/*.zip | ForEach-Object {
             $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
             "$hash  $($_.Name)"
           }
-          $lines | Set-Content -Path dist/SHA256SUMS.txt -Encoding utf8
-          Get-Content dist/SHA256SUMS.txt
+          $sumsPath = Join-Path $PWD "dist/SHA256SUMS.txt"
+          [System.IO.File]::WriteAllText(
+            $sumsPath,
+            ($lines -join "`n") + "`n",
+            [System.Text.UTF8Encoding]::new($false))
+
+          # 断言确实是 LF 且无 BOM，别再静默退回 CRLF
+          $raw = [System.IO.File]::ReadAllBytes($sumsPath)
+          if ($raw -contains 13) {
+            throw "SHA256SUMS.txt must use LF line endings (found CR)"
+          }
+          if ($raw.Length -ge 3 -and $raw[0] -eq 0xEF -and $raw[1] -eq 0xBB -and $raw[2] -eq 0xBF) {
+            throw "SHA256SUMS.txt must not have a UTF-8 BOM"
+          }
+          Write-Host "SHA256SUMS.txt OK: $($raw.Length) bytes, LF, no BOM"
+          Get-Content $sumsPath
 
       - name: Prepare release notes
         id: notes
