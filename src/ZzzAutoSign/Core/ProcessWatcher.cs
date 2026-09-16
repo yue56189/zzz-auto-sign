@@ -16,7 +16,9 @@ public sealed class ProcessWatcher : IDisposable
 
     private ManagementEventWatcher? _watcher;
     private CancellationTokenSource? _cts;
-    private Timer? _watchdog;
+    // 显式限定命名空间：本项目同时引用了 WinForms 与 System.Threading，
+    // 裸写 Timer 会在 System.Windows.Forms.Timer 与 System.Threading.Timer 之间产生歧义。
+    private System.Threading.Timer? _watchdog;
     private bool _disposed;
 
     /// <summary>目标进程启动时触发，参数为进程 ID。</summary>
@@ -75,7 +77,7 @@ public sealed class ProcessWatcher : IDisposable
                 return;
             }
 
-            _watchdog ??= new Timer(_ => RebuildSubscription(), null,
+            _watchdog ??= new System.Threading.Timer(_ => RebuildSubscription(), null,
                 dueTime: TimeSpan.FromMinutes(10), period: TimeSpan.FromMinutes(10));
 
             SubscribeLocked();

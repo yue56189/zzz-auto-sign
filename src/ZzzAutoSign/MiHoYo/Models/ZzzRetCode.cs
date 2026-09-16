@@ -38,7 +38,8 @@ public static class ZzzRetCode
             NeedCaptcha => "触发了米游社风险校验（需要验证码），无法自动完成，请手动签到一次",
             TooManyRequests => "请求过于频繁，已被限流，请稍后再试",
             NotBound => "该账号未绑定绝区零角色",
-            -100 => "登录凭证已失效，请重新获取 Cookie",
+            // 注意：-100 已由上方 NotLoggedIn 分支覆盖，重复的常量模式会触发
+            // CS8510「模式不可访问」，故此处不再列出。
             _ => $"接口返回错误"
         };
 

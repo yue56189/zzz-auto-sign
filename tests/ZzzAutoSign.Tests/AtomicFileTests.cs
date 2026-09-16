@@ -123,23 +123,30 @@ public class AtomicFileTests : IDisposable
             }
         });
 
-        var readers = Enumerable.Range(0, 4).Select(_ => Task.Run(() =>
+        // 起 4 个并发读任务。这里用显式数组而不用 Enumerable.Select，
+        // 是为了避免把 lambda 形参写成 "_"：那样内层的 "_ = 读取结果"
+        // 会被解析成给 int 形参赋值，从而报 CS0029。
+        var readers = new Task[4];
+        for (int r = 0; r < readers.Length; r++)
         {
-            for (int i = 0; i < 200; i++)
+            readers[r] = Task.Run(() =>
             {
-                try
+                for (int i = 0; i < 200; i++)
                 {
-                    _ = AtomicFile.ReadJsonOrNull<Sample>(path);
-                }
-                catch (Exception ex)
-                {
-                    lock (errors)
+                    try
                     {
-                        errors.Add(ex);
+                        _ = AtomicFile.ReadJsonOrNull<Sample>(path);
+                    }
+                    catch (Exception ex)
+                    {
+                        lock (errors)
+                        {
+                            errors.Add(ex);
+                        }
                     }
                 }
-            }
-        })).ToArray();
+            });
+        }
 
         Task.WaitAll(readers.Append(writer).ToArray());
 

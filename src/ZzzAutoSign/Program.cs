@@ -1,4 +1,5 @@
-using Microsoft.Toolkit.Uwp.Notifications;
+using System.Runtime.InteropServices;
+using CommunityToolkit.WinUI.Notifications;
 using ZzzAutoSign.Config;
 using ZzzAutoSign.Notify;
 
@@ -8,13 +9,27 @@ internal static class Program
 {
     private const string MutexName = @"Global\ZzzAutoSign_Singleton";
 
+    /// <summary>
+    /// 设置当前进程的显式 AppUserModelID。
+    /// CommunityToolkit.WinUI.Notifications 7.1.2 的 ToastNotificationManagerCompat
+    /// 并未提供 SetCurrentAppUserModelId（只有 CreateToastNotifier / Uninstall / OnActivated），
+    /// 因此这里直接调用 shell32 的 Win32 API。返回 0 表示成功。
+    /// </summary>
+    [DllImport("shell32.dll", CharSet = CharSet.Unicode, SetLastError = true)]
+    private static extern int SetCurrentProcessExplicitAppUserModelID(
+        [MarshalAs(UnmanagedType.LPWStr)] string appId);
+
     [STAThread]
     private static void Main(string[] args)
     {
         // 最早期设置 AUMID：Toast 通知的归属依赖它
         try
         {
-            ToastNotificationManagerCompat.SetCurrentAppUserModelId(AppPaths.AppUserModelId);
+            int hr = SetCurrentProcessExplicitAppUserModelID(AppPaths.AppUserModelId);
+            if (hr != 0)
+            {
+                System.Diagnostics.Debug.WriteLine($"设置 AUMID 失败，HRESULT=0x{hr:X8}");
+            }
         }
         catch
         {

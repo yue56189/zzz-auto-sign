@@ -1,7 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!-- 与被测项目保持一致：带 Windows 平台版本，否则无法引用 net8.0-windows10.0.18362.0 -->
+    <TargetFramework>net8.0-windows10.0.18362.0</TargetFramework>
     <IsPackable>false</IsPackable>
     <AssemblyName>ZzzAutoSign.Tests</AssemblyName>
     <RootNamespace>ZzzAutoSign.Tests</RootNamespace>

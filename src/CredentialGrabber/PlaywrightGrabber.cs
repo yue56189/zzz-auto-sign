@@ -53,7 +53,9 @@ public sealed class PlaywrightGrabber : IAsyncDisposable
         {
             await Task.Delay(2000);
 
-            Cookie[] cookies;
+            // Playwright 1.47 起 CookiesAsync 返回 IReadOnlyList<BrowserContextCookiesResult>，
+            // 不再是 Cookie[]。
+            IReadOnlyList<BrowserContextCookiesResult> cookies;
             try
             {
                 cookies = await _context.CookiesAsync(new[] { "https://www.miyoushe.com", "https://user.mihoyo.com" });
@@ -140,7 +142,7 @@ public sealed class PlaywrightGrabber : IAsyncDisposable
     }
 
     /// <summary>把 Playwright 读到的 Cookie 列表整理成凭证对象。</summary>
-    private static CredentialWriter.ParsedCredential BuildFromCookies(IEnumerable<Cookie> cookies)
+    private static CredentialWriter.ParsedCredential BuildFromCookies(IEnumerable<BrowserContextCookiesResult> cookies)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
 

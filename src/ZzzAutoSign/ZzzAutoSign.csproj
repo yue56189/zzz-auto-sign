@@ -2,7 +2,12 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net8.0-windows</TargetFramework>
+    <!--
+      必须带 Windows 平台版本，否则 NuGet 会挑中 CommunityToolkit.WinUI.Notifications
+      的 lib/net5.0 精简版（只有 ToastContentBuilder，没有 Show() 与 ToastNotificationManagerCompat）。
+      带版本后解析到 lib/net5.0-windows10.0.18362，桌面通知管理器才可用。
+    -->
+    <TargetFramework>net8.0-windows10.0.18362.0</TargetFramework>
     <UseWindowsForms>true</UseWindowsForms>
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>ZzzAutoSign</AssemblyName>

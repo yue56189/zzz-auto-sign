@@ -35,7 +35,7 @@ public static class AtomicFile
             {
                 // File.Replace 保留目标文件的 ACL，比 Delete+Move 更安全
                 // 第三个参数为备份路径，传 null 表示不保留备份
-                File.Replace(tmp, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                ReplaceWithRetry(tmp, path);
             }
             else
             {
@@ -59,6 +59,33 @@ public static class AtomicFile
         }
     }
 
+    /// <summary>
+    /// 带重试的原子替换。
+    ///
+    /// Windows 上 File.Replace 是「删除并改名」语义：只要还有任何句柄没以
+    /// FileShare.Delete 打开目标文件，就会抛 IOException（文件正被另一进程使用）。
+    /// 甚至杀毒软件、搜索索引器短暂持有句柄也会触发。这类占用通常是瞬时的，
+    /// 因此做有限次退避重试；读侧也已经放开 FileShare.Delete 以减少冲突。
+    /// </summary>
+    private static void ReplaceWithRetry(string tmp, string path)
+    {
+        const int maxAttempts = 10;
+
+        for (int attempt = 1; ; attempt++)
+        {
+            try
+            {
+                File.Replace(tmp, path, destinationBackupFileName: null, ignoreMetadataErrors: true);
+                return;
+            }
+            catch (IOException) when (attempt < maxAttempts)
+            {
+                // 20ms × 10 次，最多等约 200ms；仍失败则把异常抛给调用方
+                Thread.Sleep(20);
+            }
+        }
+    }
+
     /// <summary>原子写入经序列化的对象。</summary>
     public static void WriteJson<T>(string path, T value)
     {
@@ -78,7 +105,13 @@ public static class AtomicFile
                 return null;
             }
 
-            return File.ReadAllText(path);
+            // 必须以 FileShare.ReadWrite | FileShare.Delete 打开。
+            // 用 File.ReadAllText 会以 FileShare.Read 独占删除权限，导致写侧的
+            // File.Replace 直接抛「文件正被另一进程使用」——并发读写时必然踩到。
+            using var fs = new FileStream(
+                path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            using var reader = new StreamReader(fs, System.Text.Encoding.UTF8);
+            return reader.ReadToEnd();
         }
         catch
         {

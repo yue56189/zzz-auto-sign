@@ -25,6 +25,15 @@ public sealed class TrayHost : IDisposable
     private readonly ToolStripMenuItem _autoStartItem;
     private readonly ToolStripMenuItem _statusItem;
 
+    /// <summary>
+    /// 跨线程调度锚点。NotifyIcon 是 Component 而不是 Control，自身没有
+    /// InvokeRequired / BeginInvoke；本程序又没有主窗口，因此需要一个隐藏的
+    /// Control 来承载「切回 UI 线程」这件事。
+    /// 句柄必须在构造函数里（还在 UI 线程上时）强制创建，否则
+    /// Control.InvokeRequired 会因为没有句柄而恒返回 false，起不到保护作用。
+    /// </summary>
+    private readonly Control _dispatcher = new();
+
     public TrayHost(
         AppSettings settings,
         ILogger log,
@@ -72,6 +81,9 @@ public sealed class TrayHost : IDisposable
 
         _icon.DoubleClick += (_, _) => OpenSettings();
 
+        // 强制创建调度锚点的窗口句柄（必须在 UI 线程上完成）
+        _ = _dispatcher.Handle;
+
         // 注入气泡降级通道
         _notify.BalloonFallback = ShowBalloon;
 
@@ -91,9 +103,9 @@ public sealed class TrayHost : IDisposable
     /// <summary>刷新菜单里的状态行。</summary>
     public void RefreshStatus()
     {
-        if (_icon.InvokeRequired)
+        if (_dispatcher.InvokeRequired)
         {
-            _icon.BeginInvoke(RefreshStatus);
+            _dispatcher.BeginInvoke(RefreshStatus);
             return;
         }
 
@@ -200,9 +212,9 @@ public sealed class TrayHost : IDisposable
 
     private void ShowBalloon(string title, string body)
     {
-        if (_icon.InvokeRequired)
+        if (_dispatcher.InvokeRequired)
         {
-            _icon.BeginInvoke(() => ShowBalloon(title, body));
+            _dispatcher.BeginInvoke(() => ShowBalloon(title, body));
             return;
         }
 
@@ -225,5 +237,6 @@ public sealed class TrayHost : IDisposable
     {
         _icon.Visible = false;
         _icon.Dispose();
+        _dispatcher.Dispose();
     }
 }
