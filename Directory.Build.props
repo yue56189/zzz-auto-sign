@@ -6,7 +6,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
     <GenerateDocumentationFile>false</GenerateDocumentationFile>
-    <Version>1.0.2</Version>
+    <Version>1.0.3</Version>
     <Company>zzz-auto-sign</Company>
     <Product>绝区零每日自动签到</Product>
     <Copyright>Copyright (c) 2026 yue56189</Copyright>
