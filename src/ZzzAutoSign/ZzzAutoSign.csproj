@@ -21,4 +21,17 @@
     <PackageReference Include="CommunityToolkit.WinUI.Notifications" Version="7.1.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <!--
+      MIT 要求分发副本时一并给出许可证与版权声明。发布流程只打包 publish/ 目录，
+      仓库根目录的 LICENSE 默认不会进去，所以必须显式挂到发布清单上。
+      否则用户拿到的是一个「只有二进制、没有许可文本」的包。
+    -->
+    <None Include="$(MSBuildThisFileDirectory)..\..\LICENSE">
+      <Link>LICENSE</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+
 </Project>

@@ -112,6 +112,17 @@ jobs:
           if (-not (Test-Path $helper)) {
             throw "install-browser.cmd missing: $helper"
           }
+          # MIT 要求在分发副本里带上许可与版权声明，两个包的 publish 目录都必须有 LICENSE。
+          foreach ($pkg in @("publish/ZzzAutoSign", "publish/CredentialGrabber")) {
+            $lic = "$pkg/LICENSE"
+            if (-not (Test-Path $lic)) {
+              throw "LICENSE missing from $pkg - do not ship a binary without its license text"
+            }
+            if (-not (Select-String -Path $lic -Pattern "MIT License" -Quiet)) {
+              throw "$lic does not look like the MIT license"
+            }
+          }
+          Write-Host "LICENSE present in both packages"
           Write-Host "Packaged files OK: install-browser.cmd present, playwright.ps1 absent"
 
       - name: Package release archives
